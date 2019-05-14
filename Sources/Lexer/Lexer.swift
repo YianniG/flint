@@ -5,8 +5,11 @@
 //  Created by Hails, Daniel J R on 21/08/2018.
 //
 
+import Utils
 import Foundation
 import Source
+
+import BigInt
 
 /// The lexer, which turns the source code into a list of tokens.
 public struct Lexer {
@@ -48,10 +51,10 @@ public struct Lexer {
 
         if case .literal(.decimal(.integer(let base))) = lastTwoTokens.first!.kind,
             lastTwoTokens.last!.kind == .punctuation(.dot) {
-          tokens[tokens.count-2] = Token(kind: .literal(.decimal(.real(base, num))), sourceLocation: sourceLocation)
+          tokens[tokens.count-2] = Token(kind: .literal(.decimal(.real(BigInt(base), BigUInt(num)))), sourceLocation: sourceLocation)
           tokens.removeLast()
         } else {
-          tokens.append(Token(kind: .literal(.decimal(.integer(num))), sourceLocation: sourceLocation))
+          tokens.append(Token(kind: .literal(.decimal(.integer(BigInt(num)))), sourceLocation: sourceLocation))
         }
       } else if component.hasPrefix("0x") {
         // The token is an address literal.
@@ -157,7 +160,9 @@ public struct Lexer {
     ";": .punctuation(.semicolon),
     "//": .punctuation(.doubleSlash),
     "true": .literal(.boolean(.true)),
-    "false": .literal(.boolean(.false))
+    "false": .literal(.boolean(.false)),
+    "INT_MAX": .literal(.decimal(.integer(Utils.INT_MAX))),
+    "INT_MIN": .literal(.decimal(.integer(Utils.INT_MIN)))
   ]
 
   /// Splits the given string based on whitespace and other punctuation.

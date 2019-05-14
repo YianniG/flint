@@ -1,0 +1,34 @@
+//VERIFY-CHECK
+contract C {
+  var m: Int = 0
+}
+
+C :: (any) {
+  public init () {}
+
+  func overflowArguments(i: Int, j: Int) -> Int {
+    //VERIFY-WARNING
+    return i + j
+  }
+
+  public func inc(i: Int)
+    mutates (m)
+  {
+    //VERIFY-WARNING
+    m += i
+  }
+
+  func test() {
+    //VERIFY-WARNING
+    var a: Int = m + INT_MAX
+  }
+
+  func test2() {
+    //VERIFY-WARNING
+    var a: Int = m - INT_MIN
+  }
+
+  func test3() {
+    overflowArguments(i: INT_MAX + 1, j: 0)
+  }
+}

@@ -8,6 +8,8 @@
 import AST
 import YUL
 
+import BigInt
+
 /// The runtime functions used by Flint.
 enum IRRuntimeFunction {
   enum Identifiers {
@@ -54,11 +56,11 @@ enum IRRuntimeFunction {
     return "\(Identifiers.selector.mangled)()"
   }
 
-  static func decodeAsAddress(offset: Int) -> String {
+  static func decodeAsAddress(offset: BigInt) -> String {
     return "\(Identifiers.decodeAsAddress.mangled)(\(offset))"
   }
 
-  static func decodeAsUInt(offset: Int) -> String {
+  static func decodeAsUInt(offset: BigInt) -> String {
     return "\(Identifiers.decodeAsUInt.mangled)(\(offset))"
   }
 
@@ -87,7 +89,7 @@ enum IRRuntimeFunction {
     return .functionCall(FunctionCall(Identifiers.load.mangled, address, .identifier(inMemory)))
   }
 
-  static func allocateMemory(size: Int) -> YUL.Expression {
+  static func allocateMemory(size: BigInt) -> YUL.Expression {
     return .functionCall(FunctionCall(Identifiers.allocateMemory.mangled, .literal(.num(size))))
   }
 
@@ -103,11 +105,11 @@ enum IRRuntimeFunction {
     return "\(Identifiers.isValidCallerProtection.mangled)(\(address))"
   }
 
-  static func isCallerProtectionInArray(arrayOffset: Int) -> String {
+  static func isCallerProtectionInArray(arrayOffset: BigInt) -> String {
     return "\(Identifiers.isCallerProtectionInArray.mangled)(\(arrayOffset))"
   }
 
-  static func isCallerProtectionInDictionary(dictionaryOffset: Int) -> String {
+  static func isCallerProtectionInDictionary(dictionaryOffset: BigInt) -> String {
     return "\(Identifiers.isCallerProtectionInDictionary.mangled)(\(dictionaryOffset))"
   }
 
@@ -115,7 +117,7 @@ enum IRRuntimeFunction {
     return "\(Identifiers.return32Bytes.mangled)(\(value))"
   }
 
-  static func isInvalidSubscriptExpression(index: Int, arraySize: Int) -> String {
+  static func isInvalidSubscriptExpression(index: BigInt, arraySize: BigInt) -> String {
     return "\(Identifiers.isInvalidSubscriptExpression.mangled)(\(index), \(arraySize))"
   }
 
@@ -128,7 +130,7 @@ enum IRRuntimeFunction {
   }
 
   static func storageFixedSizeArrayOffset(arrayOffset: YUL.Expression,
-                                          index: YUL.Expression, arraySize: Int) -> YUL.Expression {
+                                          index: YUL.Expression, arraySize: BigInt) -> YUL.Expression {
     return .functionCall(FunctionCall(Identifiers.storageFixedSizeArrayOffset.mangled,
                                       arrayOffset, index, .literal(.num(arraySize))))
   }

@@ -12,6 +12,7 @@ public class BoogieVerifier: Verifier {
   private let monoLocation: String
   private let dumpVerifierIR: Bool
   private let printVerificationOutput: Bool
+  private let checkOverflow: Bool
   private let printHolisticRunStats: Bool
   private let skipHolisticCheck: Bool
   private let maxHolisticTimeout: Int
@@ -21,6 +22,7 @@ public class BoogieVerifier: Verifier {
               printVerificationOutput: Bool,
               skipHolisticCheck: Bool,
               printHolisticRunStats: Bool,
+              checkOverflow: Bool,
               boogieLocation: String,
               symbooglixLocation: String,
               maxHolisticTimeout: Int,
@@ -34,6 +36,7 @@ public class BoogieVerifier: Verifier {
     self.monoLocation = monoLocation
     self.dumpVerifierIR = dumpVerifierIR
     self.printVerificationOutput = printVerificationOutput
+    self.checkOverflow = checkOverflow
     self.skipHolisticCheck = skipHolisticCheck
     self.printHolisticRunStats = printHolisticRunStats
     self.maxHolisticTimeout = maxHolisticTimeout
@@ -71,6 +74,11 @@ public class BoogieVerifier: Verifier {
                                                 monoLocation: self.monoLocation,
                                                 boogieLocation: self.boogieLocation).diagnose()
 
+    //// Check for overflowing operations
+    //let intOverflow = self.checkOverflow ? BoogieIntOverflow(boogie: translation.functionalProgram,
+    //                                                         monoLocation: self.monoLocation,
+    //                                                         boogieLocation: self.boogieLocation).diagnose() : []
+
     // Test holistic spec
     var holisticErrors = [Diagnostic]()
     var holisticVerification = true
@@ -88,6 +96,7 @@ public class BoogieVerifier: Verifier {
     let verified = functionalVerification && holisticVerification
     let verificationDiagnostics = flintErrors
                                 + inconsistentAssumptions
+                                //+ intOverflow
                                 + unreachableCode
                                 + holisticErrors
 

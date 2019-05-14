@@ -18,13 +18,27 @@ struct trait Asset {
   // Moves `amount` from `source` into `this` asset.
   func transfer(source: inout Self, amount: Int)
   {
-    if source.getRawValue() < amount {
+    let sourceValue: Int = source.getRawValue()
+    assert (sourceValue <= INT_MAX)
+    if sourceValue < amount || sourceValue < 0 || amount < 0 {
       fatalError()
     }
 
+    assert (sourceValue <= INT_MAX)
+    assert (source.getRawValue() <= INT_MAX)
+
+    assert (sourceValue - amount <= INT_MAX)
     // TODO: support let _: Int = ...
-    let unused1: Int = source.setRawValue(value: source.getRawValue() - amount)
-    let unused2: Int = setRawValue(value: getRawValue() + amount)
+    let unused1: Int = source.setRawValue(value: sourceValue - amount)
+    let rawValue:Int = getRawValue()
+    if (rawValue < 0) {
+      fatalError()
+    }
+    if (INT_MAX - rawValue >= amount) {
+      // For verifier
+      fatalError()
+    }
+    let unused2: Int = setRawValue(value: rawValue + amount)
   }
 
   func transfer(source: inout Self)
@@ -50,10 +64,12 @@ struct Wei: Asset {
   }
 
   init(source: inout Wei, amount: Int) {
+    self.rawValue = 0
     transfer(source: &source, amount: amount)
   }
 
   init(source: inout Wei) {
+    self.rawValue = 0
     let amount: Int = source.getRawValue()
     transfer(source: &source, amount: amount)
   }

@@ -7,14 +7,16 @@
 import AST
 import YUL
 
+import BigInt
+
 /// Generates code for an external call.
 struct IRExternalCall {
   let externalCall: ExternalCall
 
   func rendered(functionContext: FunctionContext) -> YUL.Expression {
     // Hyper-parameter defaults.
-    var gasExpression = YUL.Expression.literal(.num(2300))
-    var valueExpression = YUL.Expression.literal(.num(0))
+    var gasExpression = YUL.Expression.literal(.num(BigInt(2300)))
+    var valueExpression = YUL.Expression.literal(.num(BigInt(0)))
 
     // Hyper-parameters specified in the external call.
     for parameter in externalCall.hyperParameters {
@@ -60,17 +62,17 @@ struct IRExternalCall {
 
     // This could be staticSize * 32, but this loop is necessary once
     // we have e.g. fixed-length arrays in external trait types.
-    var staticSize = 0
+    var staticSize = BigInt(0)
     for parameterType in matchingFunction.parameterTypes {
       switch parameterType {
       case .solidityType:
-        staticSize += 32
+        staticSize += BigInt(32)
       default:
         fatalError("cannot use non-solidity type in external call")
       }
     }
 
-    var dynamicSize = 0
+    var dynamicSize = BigInt(0)
     for (parameterType, parameter) in zip(matchingFunction.parameterTypes, functionCall.arguments) {
       switch parameterType {
       case .basicType(.string):
@@ -98,7 +100,7 @@ struct IRExternalCall {
     let slots = staticSlots + dynamicSlots
 
     // The output is simply memory suitable for the declared return type.
-    let outputSize = 32
+    let outputSize = BigInt(32)
 
     let callSuccess = functionContext.freshVariable()
     let callOutput = functionContext.freshVariable()
@@ -122,7 +124,7 @@ struct IRExternalCall {
                               .literal(.hex("0x\(functionSelector[3])")))
     )))
 
-    var currentPosition = 4
+    var currentPosition = BigInt(4)
     slots.forEach {
       functionContext.emit(.expression(.functionCall(
         FunctionCall("mstore", .functionCall(FunctionCall("add",

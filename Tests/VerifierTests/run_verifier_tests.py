@@ -50,12 +50,14 @@ def parse_fail_lines(flint_lines):
 
 
 contract_verify_result = {}
-def test_contract(contract_path, fail_lines, warning_lines):
+def test_contract(contract_path, fail_lines, warning_lines, verifier_arguments):
     runArgs = [
             flintc,
             "-g", # Only verify
-            contract_path
-            ]
+            ] \
+            + verifier_arguments \
+            + [contract_path]
+
     finished_verify = subprocess.run(runArgs, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     (failed_verification_lines, warning_verification_lines) = parse_flint_errors(str(finished_verify.stdout, 'utf-8'))
 
@@ -86,8 +88,11 @@ for contract in test_contracts:
             skipped.append(contract)
             continue
 
+        checker_arguments = lines[0].split(' ')
+        verifier_arguments = checker_arguments[1:]
+
         (fail_lines, warning_lines) = parse_fail_lines(lines)
-        pending_jobs.append(threading.Thread(target=test_contract, args=(contract, fail_lines, warning_lines)))
+        pending_jobs.append(threading.Thread(target=test_contract, args=(contract, fail_lines, warning_lines, verifier_arguments)))
 
 # Wait until all tests are completed
 for job_batch in batch(pending_jobs, test_batch_size):

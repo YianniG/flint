@@ -9,6 +9,8 @@ import AST
 import Lexer
 import YUL
 
+import BigInt
+
 /// Generates code for an expression.
 struct IRExpression {
   var expression: AST.Expression
@@ -52,10 +54,10 @@ struct IRExpression {
           fatalError("Cannot render non-empty array literals yet")
         }
       }
-      return .literal(Literal.num(0))
+      return .literal(Literal.num(BigInt(0)))
     case .dictionaryLiteral(let dictionaryLiteral):
       guard dictionaryLiteral.elements.count == 0 else { fatalError("Cannot render non-empty dictionary literals yet") }
-      return .literal(Literal.num(0))
+      return .literal(Literal.num(BigInt(0)))
     case .self(let `self`):
       return IRSelf(selfToken: self, asLValue: asLValue)
         .rendered(functionContext: functionContext)

@@ -7,6 +7,8 @@
 
 import AST
 
+import BigInt
+
 /// Generates code for a contract initializer.
 struct IRContractInitializer {
   var initializerDeclaration: SpecialDeclaration
@@ -48,7 +50,7 @@ struct IRContractInitializer {
 
   func rendered() -> String {
     let parameterSizes = initializerDeclaration.explicitParameters.map { environment.size(of: $0.type.rawType) }
-    let offsetsAndSizes = zip(parameterSizes.reversed().reduce((0, [Int]())) { (acc, element) in
+    let offsetsAndSizes = zip(parameterSizes.reversed().reduce((BigInt(0), [BigInt]())) { (acc, element) in
       let (size, sizes) = acc
       let nextSize = size + element * EVM.wordSize
       return (nextSize, sizes + [nextSize])

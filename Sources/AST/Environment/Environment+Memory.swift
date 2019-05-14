@@ -5,9 +5,11 @@
 //  Created by Hails, Daniel R on 22/08/2018.
 //
 
+import BigInt
+
 extension Environment {
   /// The memory size of a type, in terms of number of memory slots it occupies.
-  public func size(of type: RawType) -> Int {
+  public func size(of type: RawType) -> BigInt {
     switch type {
     case .basicType(.event): return 0 // Events do not use memory.
     case .basicType: return 1
@@ -34,10 +36,10 @@ extension Environment {
   }
 
   /// The memory offset of a property in a type.
-  public func propertyOffset(for property: String, enclosingType: RawTypeIdentifier) -> Int? {
+  public func propertyOffset(for property: String, enclosingType: RawTypeIdentifier) -> BigInt? {
 
-    var offsetMap = [String: Int]()
-    var offset = 0
+    var offsetMap = [String: BigInt]()
+    var offset = BigInt(0)
 
     let rootType = types[enclosingType]!
 

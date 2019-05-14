@@ -7,6 +7,8 @@
 import AST
 import YUL
 
+import BigInt
+
 /// Generates code for a function call.
 struct IRFunctionCall {
   var functionCall: AST.FunctionCall

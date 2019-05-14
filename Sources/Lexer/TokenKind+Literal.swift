@@ -5,6 +5,8 @@
 //  Created by Hails, Daniel R on 22/08/2018.
 //
 
+import BigInt
+
 extension Token.Kind {
   public enum Literal: Equatable {
     case boolean(BooleanLiteral)
@@ -19,8 +21,8 @@ extension Token.Kind {
   }
 
   public enum DecimalLiteral: Equatable {
-    case integer(Int)
-    case real(Int, Int)
+    case integer(BigInt)
+    case real(BigInt, BigUInt)
   }
 
 }

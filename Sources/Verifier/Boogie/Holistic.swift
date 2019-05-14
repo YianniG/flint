@@ -65,8 +65,8 @@ extension BoogieTranslator {
       let procedureName = entryPointBase + randomString(length: 5) //unique identifier
 
       let havocSelector = BStatement.havoc("selector", translationInformation)
-      let assumeSelector = BStatement.assume(.and(.greaterThanOrEqual(selector, .integer(BigUInt(0))),
-                                                      .lessThan(selector, .integer(BigUInt(numPublicFunctions)))), translationInformation)
+      let assumeSelector = BStatement.assume(.and(.greaterThanOrEqual(selector, .integer(BigInt(0))),
+                                                      .lessThan(selector, .integer(BigInt(numPublicFunctions)))), translationInformation)
       let (methodSelection, variables) = generateMethodSelection(functions: publicFunctions,
                                                                  selector: selector,
                                                                  tld: currentContract,
@@ -168,7 +168,7 @@ extension BoogieTranslator {
       // Add procedure call to callGraph
       addProcedureCall(enclosingFunctionName, procedureName)
       ifStmts.append(procedureCall)
-      selection.append(.ifStatement(BIfStatement(condition: .equals(selector, .integer(BigUInt(counter))),
+      selection.append(.ifStatement(BIfStatement(condition: .equals(selector, .integer(BigInt(counter))),
                                                  trueCase: ifStmts,
                                                  falseCase: [],
                                                  ti: translationInformation)))

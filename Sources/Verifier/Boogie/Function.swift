@@ -2,6 +2,7 @@ import AST
 import Source
 import Lexer
 import Foundation
+import Utils
 
 extension BoogieTranslator {
   func getCurrentFunction() -> FunctionDeclaration {
@@ -321,10 +322,25 @@ extension BoogieTranslator {
     var postConditions = [BPostCondition]()
     var bParameters = [BParameterDeclaration]()
     for param in parameters {
-      let (bParam, initStatements) = processParameter(param)
+      let (bParam, initStatements, functionPreconditions) = processParameter(param)
       functionPreAmble += initStatements
       bParameters += bParam
+      preConditions += functionPreconditions
     }
+
+    // If returns int, the int must not overflow
+    if returnType != nil,
+       case .int = returnType!,
+       let returnName = returnName {
+      let checkOverflow = BExpression.and(.lessThanOrEqual(.identifier(returnName), .integer(Utils.INT_MAX)),
+                                          .greaterThanOrEqual(.identifier(returnName), .integer(Utils.INT_MIN)))
+      postConditions.append(BPostCondition(expression: checkOverflow,
+                                           ti: TranslationInformation(sourceLocation: signature.resultType!.sourceLocation)))
+    }
+
+
+    let ti = TranslationInformation(sourceLocation: functionDeclaration.sourceLocation)
+
     if let cTld = currentTLD {
       switch cTld {
       case .structDeclaration:
@@ -341,10 +357,10 @@ extension BoogieTranslator {
           let reserveNextStructInstance: [BStatement] = [
             .assignment(.identifier(self.structInstanceVariableName!),
                         .identifier(nextInstance),
-                        TranslationInformation(sourceLocation: functionDeclaration.sourceLocation)),
+                        ti),
             .assignment(.identifier(nextInstance),
                         .add(.identifier(nextInstance), .integer(1)),
-                        TranslationInformation(sourceLocation: functionDeclaration.sourceLocation))
+                        ti)
           ]
           // Include nextInstance in modifies
           var nextInstanceId = Identifier(name: "nextInstance", //TODO: Work out how to get raw name
@@ -355,7 +371,7 @@ extension BoogieTranslator {
           let returnAllocatedStructInstance: [BStatement] = [
             .assignment(.identifier(returnName!),
                         .identifier(self.structInstanceVariableName!),
-                        TranslationInformation(sourceLocation: functionDeclaration.sourceLocation))
+                        ti)
             //.returnStatement
           ]
 
@@ -363,7 +379,7 @@ extension BoogieTranslator {
             .equals(.identifier(nextInstance), .add(.old(.identifier(nextInstance)), .integer(1)))
 
           postConditions.append(BPostCondition(expression: structInitPost,
-                                              ti: TranslationInformation(sourceLocation: functionDeclaration.sourceLocation)))
+                                              ti: ti))
 
           functionPreAmble += reserveNextStructInstance
           functionPostAmble += returnAllocatedStructInstance
@@ -371,6 +387,9 @@ extension BoogieTranslator {
           bParameters.insert(BParameterDeclaration(name: self.structInstanceVariableName!,
                                                    rawName: self.structInstanceVariableName!,
                                                    type: .int), at: 0)
+          // Make sure that the struct passed in, 'exists'
+          preConditions.append(BPreCondition(expression: .lessThan(.identifier(self.structInstanceVariableName!),
+                                                                   .identifier(normaliser.generateStructInstanceVariable(structName: getCurrentTLDName()))), ti: ti))
         }
       default: break
       }
@@ -470,7 +489,7 @@ extension BoogieTranslator {
       modifies: modifiesClauses,
       statements: callerPreStatements + triggerPreStmts + bStatements + triggerPostStmts,
       variables: getFunctionVariableDeclarations(name: currentFunctionName),
-      ti: TranslationInformation(sourceLocation: functionDeclaration.sourceLocation),
+      ti: ti,
       isHolisticProcedure: false,
       isStructInit: isStructInit,
       isContractInit: isContractInit

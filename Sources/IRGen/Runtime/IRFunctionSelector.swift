@@ -10,6 +10,8 @@ import Lexer
 import ABI
 import YUL
 
+import BigInt
+
 /// Runtime code in IR which determines which function to call based on the Ethereum's transaction payload.
 struct IRFunctionSelector {
   var fallback: SpecialDeclaration?
@@ -73,7 +75,7 @@ struct IRFunctionSelector {
       valueChecks = ""
     }
 
-    let arguments = function.parameterCanonicalTypes.enumerated().map { arg -> String in
+    let arguments = function.parameterCanonicalTypes.enumerated().map({ (BigInt($0), $1) }).map { arg -> String in
       let (index, type) = arg
       switch type {
       case .address: return IRRuntimeFunction.decodeAsAddress(offset: index)

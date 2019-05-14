@@ -3,6 +3,7 @@ import Diagnostic
 import Foundation
 import Lexer
 import Source
+import Utils
 
 import BigInt
 
@@ -170,7 +171,7 @@ class BoogieTranslator {
         ],
         preConditions: [],
         postConditions: [BPostCondition(expression:
-          .equals(.mapRead(.identifier("rawValue_Wei"), .identifier("wei")), .integer(BigUInt(0))),
+          .equals(.mapRead(.identifier("rawValue_Wei"), .identifier("wei")), .integer(BigInt(0))),
          ti: TranslationInformation(sourceLocation: SourceLocation.DUMMY))],
         structInvariants: [],
         contractInvariants: [],
@@ -178,7 +179,7 @@ class BoogieTranslator {
         modifies: [BIRModifiesDeclaration(variable: "rawValue_Wei", userDefined: true)],
         // Drain all wei from struct
         statements: [.assignment(.mapRead(.identifier("rawValue_Wei"), .identifier("wei")),
-                                 .integer(BigUInt(0)),
+                                 .integer(BigInt(0)),
                                  TranslationInformation(sourceLocation: SourceLocation.DUMMY))],
 
         variables: [], // TODO: variables
@@ -213,6 +214,28 @@ class BoogieTranslator {
 
         structInvariants.append(BIRInvariant(expression: inv,
                                              ti: TranslationInformation(sourceLocation: declaration.sourceLocation)))
+      }
+
+      for declaration in structDeclaration.variableDeclarations {
+        if case .basicType(.int) = declaration.type.rawType {
+          // Invariants are turned into both pre and post conditions
+          self.structInstanceVariableName = "i" // TODO: Check that i is unique
+          let translatedName = translateGlobalIdentifierName(declaration.identifier.name)
+
+          let nonOverflowCond = BExpression.and(.lessThanOrEqual(.mapRead(.identifier(translatedName), .identifier(self.structInstanceVariableName!)), .integer(Utils.INT_MAX)),
+                                                .greaterThanOrEqual(.mapRead(.identifier(translatedName), .identifier(self.structInstanceVariableName!)), .integer(Utils.INT_MIN)))
+
+          // All allocated structs, i < nextInstance => (non-overflowing values)
+          let inv = BExpression.quantified(.forall, [BParameterDeclaration(name: structInstanceVariableName!,
+                                                               rawName: structInstanceVariableName!,
+                                                               type: .int)],
+                                           .implies(.lessThan(.identifier(self.structInstanceVariableName!),
+                                                              .identifier(normaliser.generateStructInstanceVariable(structName: enclosingStruct))),
+                                                   nonOverflowCond))
+          self.structInstanceVariableName = nil
+          structInvariants.append(BIRInvariant(expression: inv,
+                                               ti: TranslationInformation(sourceLocation: declaration.sourceLocation)))
+        }
       }
       self.currentTLD = nil
     }
@@ -481,11 +504,13 @@ class BoogieTranslator {
     return declarations
   }
 
-  func processParameter(_ parameter: Parameter) -> ([BParameterDeclaration], [BStatement]) {
+  func processParameter(_ parameter: Parameter) -> ([BParameterDeclaration], [BStatement], [BPreCondition]) {
     let name = parameter.identifier.name
     let translatedName = translateIdentifierName(parameter.identifier.name)
     var declarations = [BParameterDeclaration]()
+    let translationInformation = TranslationInformation(sourceLocation: parameter.sourceLocation, isInvariant: false)
 
+    var functionPreconditions = [BPreCondition]()
     var functionPreAmble = [BStatement]()
     if parameter.isImplicit {
       // Can't call payable functions
@@ -503,13 +528,12 @@ class BoogieTranslator {
         addCurrentFunctionVariableDeclaration(BVariableDeclaration(name: weiAmount,
                                                                    rawName: weiAmount,
                                                                    type: .int))
-        let translationInformation = TranslationInformation(sourceLocation: parameter.sourceLocation, isInvariant: false)
         let procedureName = "initInt_Wei"
         functionPreAmble.append(.havoc(weiAmount, translationInformation))
-        functionPreAmble.append(.assume(.greaterThanOrEqual(.identifier(weiAmount), .integer(BigUInt(0))), translationInformation))
+        functionPreAmble.append(.assume(.greaterThanOrEqual(.identifier(weiAmount), .integer(BigInt(0))), translationInformation))
         functionPreAmble.append(.callProcedure(BCallProcedure(returnedValues: [translatedName],
                                                               procedureName: procedureName,
-                                                              arguments: [.integer(BigUInt(0))],
+                                                              arguments: [.integer(BigInt(0))],
                                                               ti: translationInformation)))
         functionPreAmble.append(.assignment(.mapRead(.identifier("rawValue_Wei"), .identifier(translatedName)), .identifier(weiAmount), translationInformation))
         guard let currentFunctionName = getCurrentFunctionName() else {
@@ -526,13 +550,25 @@ class BoogieTranslator {
       declarations.append(BParameterDeclaration(name: translatedName,
                                                 rawName: name,
                                                 type: convertType(parameter.type)))
+      if case .inoutType(.userDefinedType(let name)) = parameter.type.rawType {
+        // Make sure that the struct passed in, 'exists'
+        functionPreconditions.append(BPreCondition(expression: .lessThan(.identifier(translatedName),
+                                                                         .identifier(normaliser.generateStructInstanceVariable(structName: name))),
+                                                   ti: translationInformation))
+      } else if case .basicType(.int) = parameter.type.rawType {
+        // Assume ints are between INT_MAX and INT_MIN
+
+        functionPreconditions.append(BPreCondition(expression: .greaterThanOrEqual(.identifier(translatedName), .integer(Utils.INT_MIN)), ti: translationInformation))
+        functionPreconditions.append(BPreCondition(expression: .lessThanOrEqual(.identifier(translatedName), .integer(Utils.INT_MAX)), ti: translationInformation))
+      }
     }
+
 
     let context = Context(environment: environment,
                           enclosingType: getCurrentTLDName(),
                           scopeContext: getCurrentScopeContext() ?? ScopeContext())
     let (triggerPreStmts, triggerPostStmts) = triggers.lookup(parameter, context, extra: ["normalised_parameter_name": translatedName])
-    return (declarations, functionPreAmble + triggerPreStmts + triggerPostStmts)
+    return (declarations, functionPreAmble + triggerPreStmts + triggerPostStmts, functionPreconditions)
   }
 
   func process(_ token: Token) -> BExpression {
@@ -553,7 +589,7 @@ class BoogieTranslator {
     case .decimal(let decimalLiteral):
       switch decimalLiteral {
       case .integer(let i):
-        return .integer(BigUInt(i))
+        return .integer(BigInt(i))
       case .real(let b, let f):
         return .real(b, f)
       }
@@ -565,7 +601,7 @@ class BoogieTranslator {
       fatalError()
     case .address(let hex):
       let hexValue = hex[hex.index(hex.startIndex, offsetBy: 2)...] // Hex literals are prefixed with 0x
-      guard let dec = BigUInt(hexValue, radix: 16) else {
+      guard let dec = BigInt(hexValue, radix: 16) else {
         print("Couldn't convert hex address value \(hexValue)")
         fatalError()
       }
@@ -665,7 +701,7 @@ class BoogieTranslator {
     for typeState in typeStates {
       conditions.append(.equals(.identifier(getStateVariable()),
                                 // Convert typestate name to numerical representation
-                                .integer(BigUInt(getStateVariableValue(typeState.name)))))
+                                .integer(BigInt(getStateVariableValue(typeState.name)))))
     }
 
     if conditions.count > 0 {
@@ -763,7 +799,7 @@ class BoogieTranslator {
                                        isInStruct: Bool = false) -> [BStatement] {
     var assumeStmts = [BStatement]()
     let identifierName = BExpression.identifier(normaliser.getShadowArraySizePrefix(depth: depth) + name)
-    let holyDynAccess = nestedIterableAccess(holyExpression: { .greaterThanOrEqual($0, .integer(BigUInt(0))) },
+    let holyDynAccess = nestedIterableAccess(holyExpression: { .greaterThanOrEqual($0, .integer(BigInt(0))) },
                                              depth: depth,
                                              isInStruct: isInStruct)
     switch type {
@@ -777,7 +813,7 @@ class BoogieTranslator {
                                  TranslationInformation(sourceLocation: source)))
       assumeStmts += generateIterableSizeAssumptions(name: name, type: valueType, source: source, depth: depth + 1, isInStruct: isInStruct)
     case .fixedSizeArrayType(let valueType, let size):
-      let holyFixedAccess = nestedIterableAccess(holyExpression: { .equals($0, .integer(BigUInt(size))) },
+      let holyFixedAccess = nestedIterableAccess(holyExpression: { .equals($0, .integer(BigInt(size))) },
                                                  depth: depth,
                                                  isInStruct: isInStruct)
       assumeStmts.append(.assume(holyFixedAccess(identifierName),
@@ -967,10 +1003,10 @@ class BoogieTranslator {
 
    func defaultValue(_ type: BType) -> BExpression {
     switch type {
-    case .int: return .integer(BigUInt(0))
-    case .real: return .real(0, 0)
+    case .int: return .integer(BigInt(0))
+    case .real: return .real(BigInt(0), BigUInt(0))
     case .boolean: return .boolean(false) // TODO: Is this the default bool value?
-    case .userDefined: return .integer(BigUInt(0)) //TODO: Is this right, for eg addresses
+    case .userDefined: return .integer(BigInt(0)) //TODO: Is this right, for eg addresses
     //  print("Can't translate default value for user defined type yet \(name)")
     //  fatalError()
     case .map(let t1, let t2):

@@ -7,6 +7,8 @@
 import Source
 import Lexer
 
+import BigInt
+
 /// Information about the source program.
 public class Environment {
   /// Information about each type (contracts, structs and traits) which the program define, such as its properties and

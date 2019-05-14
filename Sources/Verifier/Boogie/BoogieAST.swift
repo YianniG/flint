@@ -330,8 +330,8 @@ indirect enum BExpression: CustomStringConvertible {
   case negate(BExpression)
   case mapRead(BExpression, BExpression)
   case boolean(Bool)
-  case integer(BigUInt)
-  case real(Int, Int)
+  case integer(BigInt)
+  case real(BigInt, BigUInt)
   case identifier(String)
   case old(BExpression)
   case quantified(BQuantifier, [BParameterDeclaration], BExpression)
@@ -476,5 +476,40 @@ indirect enum BType: CustomStringConvertible, Hashable {
 
   var hashValue: Int {
     return self.description.hashValue
+  }
+}
+
+func type(of expr: BExpression, env: [String: BType]) -> BType {
+  // Assume tree is syntactically + semantically correct
+  switch expr {
+  case .equivalent, .implies, .or, .and, .equals, .lessThan, .lessThanOrEqual, .greaterThan, .greaterThanOrEqual, .not, .boolean, .quantified:
+    return .boolean
+
+  case .concat(let i, _): return type(of: i, env: env)
+  case .add(let l, _): return type(of: l, env: env)
+  case .subtract(let l, _): return type(of: l, env: env)
+  case .multiply(let l, _): return type(of: l, env: env)
+  case .divide(let l, _): return type(of: l, env: env)
+  case .modulo(let l, _): return type(of: l, env: env)
+
+  case .integer: return .int
+  case .real: return .real
+
+  case .negate(let e): return type(of: e, env: env)
+  case .mapRead(let b, _): return type(of: b, env: env)
+  case .identifier(let i):
+    guard let t = env[i] else {
+      print("couldn't find identifier \(i) in environmen, when getting boogie type")
+      print(env)
+      fatalError()
+    }
+    return t
+  case .old(let e): return type(of: e, env: env)
+  case .functionApplication:
+    print("not implemented getting type for boogie function application")
+    fatalError()
+  case .nop:
+    print("nop doesn't have a type")
+    fatalError()
   }
 }

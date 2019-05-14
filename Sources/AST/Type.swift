@@ -6,6 +6,9 @@
 //
 import Lexer
 import Source
+
+import BigInt
+
 /// The raw representation of an RawType.
 public typealias RawTypeIdentifier = String
 
@@ -14,7 +17,7 @@ public indirect enum RawType: Equatable {
   case basicType(BasicType)
   case rangeType(RawType)
   case arrayType(RawType)
-  case fixedSizeArrayType(RawType, size: Int)
+  case fixedSizeArrayType(RawType, size: BigInt)
   case dictionaryType(key: RawType, value: RawType)
   case userDefinedType(RawTypeIdentifier)
   case inoutType(RawType)
@@ -388,7 +391,7 @@ public struct Type: ASTNode {
     sourceLocation = .spanning(openSquareBracketToken, to: closeSquareBracketToken)
   }
 
-  public init(fixedSizeArrayWithElementType type: Type, size: Int, closeSquareBracketToken: Token) {
+  public init(fixedSizeArrayWithElementType type: Type, size: BigInt, closeSquareBracketToken: Token) {
     rawType = .fixedSizeArrayType(type.rawType, size: size)
     sourceLocation = .spanning(type, to: closeSquareBracketToken)
   }

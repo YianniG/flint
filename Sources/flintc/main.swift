@@ -17,14 +17,15 @@ func main() {
     Flag("skip-verifier", flag: "s", description: "Skip automatic formal code verification"),
     //TODO: Reached hard limit on # of arguments that Commander supports
     //Flag("print-holistic-run-stats", flag: "r", description: "Emit the holistic verifier's engine's run stats"),
-    Option<Int>("holistic-max-timeout", default: 10, description: "Set the max timeout (s) for the holistic verifier"),
+    //Option<Int>("holistic-max-timeout", default: 10, description: "Set the max timeout (s) for the holistic verifier"),
+    Flag("check-overflow", flag: "l", description: "Detect operations which could overflow"),
     Flag("skip-code-gen", flag: "g", description: "Skip code generation"),
     Flag("dump-ast", flag: "a", description: "Print the abstract syntax tree of the code."),
     Flag("verify", flag: "v", description: "Verify expected diagnostics were produced."),
     Flag("quiet", flag: "q", description: "Supress warnings and only emit fatal errors."),
     Flag("no-stdlib", description: "Do not load the standard library"),
     VariadicArgument<String>("input files", description: "The input files to compile.")
-  ) { emitIR, irOutputPath, emitBytecode, dumpVerifierIR, printVerificationOutput, skipHolisticCheck, skipVerifier, /*printHolisticRunStats,*/ maxHolisticTimeout, skipCodeGen, dumpAST, shouldVerify, quiet, noStdlib, inputFilePaths in
+  ) { emitIR, irOutputPath, emitBytecode, dumpVerifierIR, printVerificationOutput, skipHolisticCheck, skipVerifier, /*printHolisticRunStats,*/ /*maxHolisticTimeout,*/ checkOverflow, skipCodeGen, dumpAST, shouldVerify, quiet, noStdlib, inputFilePaths in
     let inputFiles = inputFilePaths.map(URL.init(fileURLWithPath:))
 
     for inputFile in inputFiles {
@@ -54,7 +55,8 @@ func main() {
         printVerificationOutput: printVerificationOutput,
         skipHolisticCheck: skipHolisticCheck,
         printHolisticRunStats: true, //printHolisticRunStats,
-        maxHolisticTimeout: maxHolisticTimeout,
+        maxHolisticTimeout: 10, //maxHolisticTimeout,
+        checkOverflow: checkOverflow,
         skipVerifier: skipVerifier,
         skipCodeGen: skipCodeGen,
         diagnostics: DiagnosticPool(shouldVerify: shouldVerify,

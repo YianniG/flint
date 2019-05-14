@@ -115,6 +115,7 @@ extension Compiler {
                                               printVerificationOutput: config.printVerificationOutput,
                                               skipHolisticCheck: config.skipHolisticCheck,
                                               printHolisticRunStats: config.printHolisticRunStats,
+                                              checkOverflow: config.checkOverflow,
                                               boogieLocation: "boogie/Binaries/Boogie.exe",
                                               symbooglixLocation: "symbooglix/src/SymbooglixDriver/bin/Release/sbx.exe",
                                               maxHolisticTimeout: config.maxHolisticTimeout,
@@ -190,6 +191,7 @@ public struct CompilerConfiguration {
   public let skipVerifier: Bool
   public let printHolisticRunStats: Bool
   public let maxHolisticTimeout: Int
+  public let checkOverflow: Bool
   public let skipCodeGen: Bool
   public let diagnostics: DiagnosticPool
   public let loadStdlib: Bool
@@ -205,6 +207,7 @@ public struct CompilerConfiguration {
               skipHolisticCheck: Bool,
               printHolisticRunStats: Bool,
               maxHolisticTimeout: Int,
+              checkOverflow: Bool,
               skipVerifier: Bool,
               skipCodeGen: Bool,
               diagnostics: DiagnosticPool,
@@ -220,6 +223,7 @@ public struct CompilerConfiguration {
     self.skipHolisticCheck = skipHolisticCheck
     self.printHolisticRunStats = printHolisticRunStats
     self.maxHolisticTimeout = maxHolisticTimeout
+    self.checkOverflow = checkOverflow
     self.skipVerifier = skipVerifier
     self.skipCodeGen = skipCodeGen
     self.diagnostics = diagnostics

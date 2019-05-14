@@ -5,11 +5,13 @@
 //  Created by Aurel Bílý on 12/26/18.
 //
 
+import BigInt
+
 public enum Literal: CustomStringConvertible {
-  case num(Int)
+  case num(BigInt)
   case string(String)
   case bool(Bool)
-  case decimal(Int, Int)
+  case decimal(BigInt, BigUInt)
   case hex(String)
 
   public var description: String {

@@ -7,6 +7,8 @@
 import AST
 import YUL
 
+import BigInt
+
 /// Generates code for a subscript expression.
 struct IRSubscriptExpression {
   var subscriptExpression: SubscriptExpression
@@ -22,7 +24,7 @@ struct IRSubscriptExpression {
     return nil
   }
 
-  func nestedStorageOffset(subExpr: SubscriptExpression, baseOffset: Int,
+  func nestedStorageOffset(subExpr: SubscriptExpression, baseOffset: BigInt,
                            functionContext: FunctionContext) -> YUL.Expression {
     let indexExpressionCode = IRExpression(expression: subExpr.indexExpression)
       .rendered(functionContext: functionContext)

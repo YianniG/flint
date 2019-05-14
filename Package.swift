@@ -123,6 +123,7 @@ let package = Package(
         "Diagnostic",
         "Lexer",
         "ABI",
+        "Utils",
       ],
       exclude: ["ASTPass/ASTPass.template.swift"]
     ),
@@ -277,7 +278,9 @@ let package = Package(
     // MARK: Utils -
     .target(
       name: "Utils",
-      dependencies: []
+      dependencies: [
+        "BigInt"
+      ]
     ),
     .testTarget(
       name: "UtilsTests",
