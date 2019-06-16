@@ -49,12 +49,18 @@ public class BoogieVerifier: Verifier {
   // Verify flint code and return flint line number and suggestion for any error
   public func verify() -> (verified: Bool, errors: [Diagnostic]) {
     // Returns the boogie translation and a mapping from Boogie line #'s to flint line #'s
+
+    let startTranslationTime = Date().timeIntervalSinceReferenceDate
+
     let translationIR = boogieTranslator.translate(holisticTransactionDepth: self.maxTransactionDepth)
     let translation = BoogieIRResolver().resolve(ir: translationIR)
     let (functionalBoogieSource, functionalMapping) = translation.functionalProgram.render()
     if self.dumpVerifierIR {
       print(functionalBoogieSource)
     }
+
+    let endTranslationTime = Date().timeIntervalSinceReferenceDate - startTranslationTime
+    let startVerificationTime = Date().timeIntervalSinceReferenceDate
 
     // Verify boogie code
     let boogieErrors = Boogie.verifyBoogie(boogie: functionalBoogieSource,
@@ -89,6 +95,10 @@ public class BoogieVerifier: Verifier {
         }
       }
     }
+
+    let endVerificationTime = Date().timeIntervalSinceReferenceDate - startVerificationTime
+    print(endTranslationTime)
+    print(endVerificationTime)
 
     let verified = functionallyVerified && holisticVerification
     let verificationDiagnostics = flintErrors
