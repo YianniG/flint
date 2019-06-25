@@ -1,0 +1,17 @@
+contract C {
+  var counter: Int = 0
+
+  //invariant (counter >= 0)
+
+  will (counter == 5)
+}
+
+C :: (any) {
+  public init() { }
+
+  public func increment()
+    mutates (counter)
+  {
+    self.counter -= 1
+  }
+}

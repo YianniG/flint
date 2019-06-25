@@ -13,19 +13,21 @@ C :: (any) {
   public func setValue(p: Int)
     mutates (value)
   {
-    self.value = p
+    self.value = 0
     assert (self.value == p)
   }
 
   @payable
-  public func sellTicket(implicit sale: Wei)
+  public func deposit(implicit amount: Wei)
     mutates (balance, Wei.rawValue)
 
-    pre (sale.rawValue > 0)
+    pre (amount.rawValue > 0)
+    pre (amount.rawValue == 0)
+
     post (balance.rawValue > prev(balance.rawValue))
     post (balance.rawValue == prev(balance.rawValue)
-          + prev(sale.rawValue))
+          + prev(amount.rawValue))
   {
-    self.balance.transfer(source: &sale)
+    self.balance.transfer(source: &amount)
   }
 }
